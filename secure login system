@@ -1,0 +1,97 @@
+import hashlib
+import json
+import os
+import getpass
+
+FILE_NAME = "users.json"
+
+# Load users
+def load_users():
+    if os.path.exists(FILE_NAME):
+        with open(FILE_NAME, "r") as file:
+            return json.load(file)
+    return {}
+
+# Save users
+def save_users(users):
+    with open(FILE_NAME, "w") as file:
+        json.dump(users, file)
+
+# Hash password
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# Password strength checker
+def is_strong(password):
+    return len(password) >= 8 and any(char.isdigit() for char in password)
+
+users = load_users()
+
+# Register
+def register():
+    username = input("Enter username: ")
+
+    if username in users:
+        print("Username already exists!")
+        return
+
+    password = getpass.getpass("Enter password: ")
+
+    if not is_strong(password):
+        print("Password must be at least 8 characters and contain a number.")
+        return
+
+    users[username] = {
+        "password": hash_password(password),
+        "attempts": 0,
+        "locked": False
+    }
+
+    save_users(users)
+    print("Registration successful!")
+
+# Login
+def login():
+    username = input("Enter username: ")
+
+    if username not in users:
+        print("User not found!")
+        return
+
+    if users[username]["locked"]:
+        print("Account is locked due to too many failed attempts.")
+        return
+
+    password = getpass.getpass("Enter password: ")
+
+    if users[username]["password"] == hash_password(password):
+        print("Login successful!")
+        users[username]["attempts"] = 0
+    else:
+        users[username]["attempts"] += 1
+        print("Invalid password!")
+
+        if users[username]["attempts"] >= 3:
+            users[username]["locked"] = True
+            print("Account locked!")
+
+    save_users(users)
+
+# Menu
+while True:
+    print("\n--- Secure Login System ---")
+    print("1. Register")
+    print("2. Login")
+    print("3. Exit")
+
+    choice = input("Choose option: ")
+
+    if choice == "1":
+        register()
+    elif choice == "2":
+        login()
+    elif choice == "3":
+        print("Goodbye!")
+        break
+    else:
+        print("Invalid choice")
